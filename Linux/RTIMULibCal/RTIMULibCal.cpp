@@ -26,6 +26,8 @@
 #include "RTIMUMagCal.h"
 #include "RTIMUAccelCal.h"
 
+#include <ros/package.h>
+
 #include <termios.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -34,7 +36,7 @@
 
 //  where to find the ellipsoid fitting code
 
-#define ELLIPSOID_FIT_DIR               "../RTEllipsoidFit/"
+const char* ELLIPSOID_FIT_DIR = (ros::package::getPath("rtimulib")+"/RTEllipsoidFit/").c_str();
 
 //  function prototypes
 

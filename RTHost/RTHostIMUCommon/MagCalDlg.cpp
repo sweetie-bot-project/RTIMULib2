@@ -24,6 +24,8 @@
 #include "MagCalDlg.h"
 #include "RTIMUMagCal.h"
 
+#include <ros/package.h>
+
 #include <qboxlayout.h>
 #include <qgridlayout.h>
 #include <qformlayout.h>
@@ -38,9 +40,7 @@ MagCalDlg::MagCalDlg(QWidget *parent, RTIMUSettings* settings)
     m_cal = new RTIMUMagCal(settings);
     m_newData = false;
 
-    m_fitDirOptions.append("./RTEllipsoidFit/");
-    m_fitDirOptions.append("../RTEllipsoidFit/");
-    m_fitDirOptions.append("../../RTEllipsoidFit/");
+    m_fitDirOptions.append((ros::package::getPath("rtimulib")+"/RTEllipsoidFit/").c_str());
 
     findFitDir();
 

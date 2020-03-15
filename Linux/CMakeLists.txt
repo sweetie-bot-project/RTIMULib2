@@ -38,9 +38,51 @@ INCLUDE(FeatureSummary)
 ########################################################################
 # Project setup
 ########################################################################
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
-PROJECT(RTIMULib CXX)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
+PROJECT(rtimulib_tools CXX)
 ENABLE_TESTING()
+
+
+# QT4 is end if life and unsupported
+SET(QT5 ON)
+
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  rtimulib
+  roslib
+)
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if your package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES rtimulib_tools
+#  CATKIN_DEPENDS rtimulib
+#  DEPENDS system_lib
+)
+
+###########
+## Build ##
+###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
 
 OPTION(BUILD_GL "Build RTIMULibGL" ON)
 OPTION(BUILD_DRIVE "Build RTIMULibDrive" ON)
@@ -58,10 +100,6 @@ ADD_FEATURE_INFO(RTIMULibDrive11 BUILD_DRIVE11 "App that shows to use  pressure/
 ADD_FEATURE_INFO(RTIMULibCal BUILD_CAL "Command line calibration tool for the magnetometers and accelerometers.")
 ADD_FEATURE_INFO(RTIMULibDemo BUILD_DEMO "GUI app that displays the fused IMU data in real-time")
 ADD_FEATURE_INFO(RTIMULibDemoGL BUILD_DEMOGL "RTIMULibDemo with OpenGL visualization")
-
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../RTIMULib)
-
-ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/../RTIMULib RTIMULib)
 
 IF(BUILD_GL)
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/RTIMULibGL)
@@ -94,6 +132,6 @@ IF(BUILD_DEMOGL)
     ADD_SUBDIRECTORY(RTIMULibDemoGL)
 ENDIF(BUILD_DEMOGL)
 
-PRINT_ENABLED_FEATURES()
+feature_summary(WHAT ENABLED_FEATURES DESCRIPTION "Enabled features:")
 
 MESSAGE(STATUS "Using install prefix: ${CMAKE_INSTALL_PREFIX}")
