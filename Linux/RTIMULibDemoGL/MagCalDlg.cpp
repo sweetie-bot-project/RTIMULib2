@@ -40,7 +40,7 @@ MagCalDlg::MagCalDlg(QWidget *parent, RTIMUSettings* settings)
     m_cal = new RTIMUMagCal(settings);
     m_newData = false;
 
-    m_fitDirOptions.append((ros::package::getPath("rtimulib_tools")+"/RTEllipsoidFit/").c_str());
+    m_fitDirOptions.append((ros::package::getPath("rtimulib")+"/RTEllipsoidFit/").c_str());
 
     findFitDir();
 
