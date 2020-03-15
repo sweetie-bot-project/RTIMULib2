@@ -179,26 +179,26 @@ void doMagMinMaxCal()
                 displayMagMinMax();
                 displayTimer = now;
             }
-        }
 
-        if ((input = getUserChar()) != 0) {
-            switch (input) {
-            case 's' :
-                printf("\nSaving min/max data.\n\n");
-                magCal->magCalSaveMinMax();
-                magMinMaxDone = true;
-                return;
+            if ((input = getUserChar()) != 0) {
+                switch (input) {
+                case 's' :
+                    printf("\nSaving min/max data.\n\n");
+                    magCal->magCalSaveMinMax();
+                    magMinMaxDone = true;
+                    return;
 
-            case 'x' :
-                printf("\nAborting.\n");
-                return;
+                case 'x' :
+                    printf("\nAborting.\n");
+                    return;
 
-            case 'r' :
-                printf("\nResetting min/max data.\n");
-                magCal->magCalReset();
-                break;
+                case 'r' :
+                    printf("\nResetting min/max data.\n");
+                    magCal->magCalReset();
+                    break;
+                }
             }
-        }
+	}
     }
 }
 
@@ -248,13 +248,13 @@ void doMagEllipsoidCal()
                 displayMagEllipsoid();
                 displayTimer = now;
             }
-        }
 
-        if ((input = getUserChar()) != 0) {
-            switch (input) {
-            case 'x' :
-                printf("\nAborting.\n");
-                return;
+            if ((input = getUserChar()) != 0) {
+                switch (input) {
+                case 'x' :
+                    printf("\nAborting.\n");
+                    return;
+                }
             }
         }
     }
@@ -350,35 +350,35 @@ void doAccelCal()
                 displayAccelMinMax();
                 displayTimer = now;
             }
-        }
 
-        if ((input = getUserChar()) != 0) {
-            switch (input) {
-            case 'e' :
-                accelEnables[accelCurrentAxis] = true;
-                break;
+            if ((input = getUserChar()) != 0) {
+                switch (input) {
+                case 'e' :
+                    accelEnables[accelCurrentAxis] = true;
+                    break;
 
-            case 'd' :
-                accelEnables[accelCurrentAxis] = false;
-                break;
+                case 'd' :
+                    accelEnables[accelCurrentAxis] = false;
+                    break;
 
-            case 'r' :
-                accelCal->accelCalReset();
-                break;
+                case 'r' :
+                    accelCal->accelCalReset();
+                    break;
 
-            case ' ' :
-                if (++accelCurrentAxis == 3)
-                    accelCurrentAxis = 0;
-                break;
+                case ' ' :
+                    if (++accelCurrentAxis == 3)
+                        accelCurrentAxis = 0;
+                    break;
 
-            case 's' :
-                accelCal->accelCalSave();
-                printf("\nAccelerometer calibration data saved to file.\n");
-                return;
+                case 's' :
+                    accelCal->accelCalSave();
+                    printf("\nAccelerometer calibration data saved to file.\n");
+                    return;
 
-            case 'x' :
-                printf("\nAborting.\n");
-                return;
+                case 'x' :
+                    printf("\nAborting.\n");
+                    return;
+                }
             }
         }
     }
