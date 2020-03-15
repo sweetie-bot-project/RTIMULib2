@@ -36,7 +36,7 @@
 
 //  where to find the ellipsoid fitting code
 
-const char* ELLIPSOID_FIT_DIR = (ros::package::getPath("rtimulib")+"/RTEllipsoidFit/").c_str();
+const std::string ELLIPSOID_FIT_DIR = (ros::package::getPath("rtimulib")+"/RTEllipsoidFit/");
 
 //  function prototypes
 
@@ -236,7 +236,7 @@ void doMagEllipsoidCal()
             magCal->newEllipsoidData(imuData.compass);
 
             if (magCal->magCalEllipsoidValid()) {
-                magCal->magCalSaveRaw(ELLIPSOID_FIT_DIR);
+                magCal->magCalSaveRaw(ELLIPSOID_FIT_DIR.c_str());
                 processEllipsoid();
                 return;
             }
@@ -270,7 +270,7 @@ void processEllipsoid()
     pid = fork();
     if (pid == 0) {
         //  child process
-        chdir(ELLIPSOID_FIT_DIR);
+        chdir(ELLIPSOID_FIT_DIR.c_str());
         execl("/bin/sh", "/bin/sh", "-c", RTIMUCALDEFS_OCTAVE_COMMAND, NULL);
         printf("here");
         _exit(EXIT_FAILURE);
@@ -284,7 +284,7 @@ void processEllipsoid()
         } else {
             if (status == 0) {
                 printf("\nEllipsoid fit completed - saving data to file.");
-                magCal->magCalSaveCorr(ELLIPSOID_FIT_DIR);
+                magCal->magCalSaveCorr(ELLIPSOID_FIT_DIR.c_str());
             } else {
                 printf("\nEllipsoid fit returned %d - aborting.\n", status);
             }
