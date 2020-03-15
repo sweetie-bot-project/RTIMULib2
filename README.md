@@ -1,5 +1,7 @@
 # RTIMULib2 - a versatile C++ and Python 9-dof, 10-dof and 11-dof IMU library
 
+*** This version modified to use in ROS workspace ***
+
 RTIMULib2 is an easy way to connect a 9-dof, 10-dof or 11-dof IMU to an embedded Linux system and obtain RTQF or Kalman-filtered quaternion or Euler angle pose data. Basically, two simple function calls (IMUInit() and IMURead()) are pretty much all that's needed to integrate RTIMULib2.
 
 RTIMULib2 is the second version of the original RTIMULib library. The main change is the addition of the runtime magnetometer calibration functionality.
