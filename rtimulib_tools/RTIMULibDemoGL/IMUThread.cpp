@@ -22,8 +22,8 @@
 //  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "IMUThread.h"
-#include "IMUDrivers/RTPressure.h"
-#include "IMUDrivers/RTHumidity.h"
+#include "rtimulib/IMUDrivers/RTPressure.h"
+#include "rtimulib/IMUDrivers/RTHumidity.h"
 #include <QDebug>
 
 IMUThread::IMUThread() : QObject()
