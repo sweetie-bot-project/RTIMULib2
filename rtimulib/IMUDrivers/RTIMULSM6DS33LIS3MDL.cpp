@@ -827,13 +827,13 @@ bool RTIMULSM6DS33LIS3MDL::IMURead()
 
     //  sort out accel data;
     m_imuData.accel.setX(m_imuData.accel.x());
-    m_imuData.accel.setY(-m_imuData.accel.y());
-    m_imuData.accel.setZ(-m_imuData.accel.z());
+    m_imuData.accel.setY(m_imuData.accel.y());
+    m_imuData.accel.setZ(m_imuData.accel.z());
 
     //  sort out compass axes
     m_imuData.compass.setX(m_imuData.compass.x());
-    m_imuData.compass.setY(-m_imuData.compass.y());
-    m_imuData.compass.setZ(-m_imuData.compass.z());
+    m_imuData.compass.setY(m_imuData.compass.y());
+    m_imuData.compass.setZ(m_imuData.compass.z());
 
     //  now do standard processing
     handleGyroBias();
