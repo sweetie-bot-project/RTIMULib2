@@ -26,7 +26,7 @@
 
 #include <QThread>
 
-#include "RTIMULib.h"
+#include "rtimulib/RTIMULib.h"
 
 class RTPressure;
 class RTHumidity;

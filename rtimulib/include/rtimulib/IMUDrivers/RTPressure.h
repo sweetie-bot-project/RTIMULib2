@@ -24,8 +24,8 @@
 #ifndef _RTPRESSURE_H
 #define	_RTPRESSURE_H
 
-#include "RTIMUSettings.h"
-#include "RTIMULibDefs.h"
+#include "../RTIMUSettings.h"
+#include "../RTIMULibDefs.h"
 #include "RTPressureDefs.h"
 
 class RTPressure

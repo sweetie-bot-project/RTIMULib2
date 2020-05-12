@@ -24,10 +24,10 @@
 #ifndef _RTIMU_H
 #define	_RTIMU_H
 
-#include "RTMath.h"
-#include "RTFusion.h"
-#include "RTIMULibDefs.h"
-#include "RTIMUSettings.h"
+#include "../RTMath.h"
+#include "../RTFusion.h"
+#include "../RTIMULibDefs.h"
+#include "../RTIMUSettings.h"
 
 //  Axis rotation defs
 //

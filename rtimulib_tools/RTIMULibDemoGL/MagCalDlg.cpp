@@ -22,7 +22,7 @@
 //  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MagCalDlg.h"
-#include "RTIMUMagCal.h"
+#include "rtimulib/RTIMUMagCal.h"
 
 #include <ros/package.h>
 

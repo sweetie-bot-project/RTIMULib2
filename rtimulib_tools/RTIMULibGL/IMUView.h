@@ -29,7 +29,7 @@
 #include <QtGL.h>
 
 #include "VRIMUWidget.h"
-#include "RTMath.h"
+#include "rtimulib/RTMath.h"
 
 #define IMUVIEW_DEPTH                   -15						// normal IMU position
 #define	IMUVIEW_RESTART_INTERVAL		1000					// length of time in restart interval

@@ -22,8 +22,8 @@
 //  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SelectFusionDlg.h"
-#include "RTIMUSettings.h"
-#include "RTFusion.h"
+#include "rtimulib/RTIMUSettings.h"
+#include "rtimulib/RTFusion.h"
 
 #include <QFormLayout>
 #include <QLabel>

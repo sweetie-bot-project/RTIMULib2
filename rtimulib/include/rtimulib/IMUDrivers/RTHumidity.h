@@ -24,8 +24,8 @@
 #ifndef _RTHUMIDITY_H
 #define	_RTHUMIDITY_H
 
-#include "RTIMUSettings.h"
-#include "RTIMULibDefs.h"
+#include "../RTIMUSettings.h"
+#include "../RTIMULibDefs.h"
 #include "RTHumidityDefs.h"
 
 class RTHumidity
