@@ -49,11 +49,11 @@
 
 //  this defines the accelerometer noise level
 
-#define RTIMU_FUZZY_GYRO_ZERO      0.20
+#define RTIMU_FUZZY_GYRO_ZERO      0.05
 
 //  this defines the accelerometer noise level
 
-#define RTIMU_FUZZY_ACCEL_ZERO      0.05
+#define RTIMU_FUZZY_ACCEL_ZERO      0.04
 
 //  Axis rotation arrays
 
