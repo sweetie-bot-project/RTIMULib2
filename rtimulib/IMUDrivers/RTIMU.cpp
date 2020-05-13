@@ -151,6 +151,11 @@ RTIMU::RTIMU(RTIMUSettings *settings)
         m_runtimeMagCalMin[i] = 1000;
     }
 
+    for (int i = 0; i < 3; i++) {
+        m_accelScale[i] = 1.0f;
+        m_accelOffset[i] = 0.0f;
+    }
+
     switch (m_settings->m_fusionType) {
     case RTFUSION_TYPE_KALMANSTATE4:
         m_fusion = new RTFusionKalman4();
@@ -212,6 +217,11 @@ void RTIMU::setCalibrationData()
 
     if (m_settings->m_accelCalValid) {
         HAL_INFO("Using accel calibration\n");
+
+        for (int i = 0; i < 3; i++) {
+            m_accelOffset[i] = (m_settings->m_accelCalMax.data(i) + m_settings->m_accelCalMin.data(i)) / 2.0f;
+            m_accelScale[i] = 2.0f / (m_settings->m_accelCalMax.data(i) - m_settings->m_accelCalMin.data(i));
+        }
     } else {
         HAL_INFO("Accel calibration not in use\n");
     }
@@ -440,20 +450,9 @@ void RTIMU::calibrateAccel()
     if (!getAccelCalibrationValid())
         return;
 
-    if (m_imuData.accel.x() >= 0)
-        m_imuData.accel.setX(m_imuData.accel.x() / m_settings->m_accelCalMax.x());
-    else
-        m_imuData.accel.setX(m_imuData.accel.x() / -m_settings->m_accelCalMin.x());
-
-    if (m_imuData.accel.y() >= 0)
-        m_imuData.accel.setY(m_imuData.accel.y() / m_settings->m_accelCalMax.y());
-    else
-        m_imuData.accel.setY(m_imuData.accel.y() / -m_settings->m_accelCalMin.y());
-
-    if (m_imuData.accel.z() >= 0)
-        m_imuData.accel.setZ(m_imuData.accel.z() / m_settings->m_accelCalMax.z());
-    else
-        m_imuData.accel.setZ(m_imuData.accel.z() / -m_settings->m_accelCalMin.z());
+    for(int i = 0; i < 3; i++) {
+        m_imuData.accel.setData(i, m_accelScale[i] * (m_imuData.accel.data(i) - m_accelOffset[i]));
+    }
 }
 
 void RTIMU::updateFusion()

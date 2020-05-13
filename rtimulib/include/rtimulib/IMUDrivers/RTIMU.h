@@ -183,6 +183,8 @@ protected:
     RTFLOAT m_gyroContinuousAlpha;                          // gyro bias continuous (slow) learning rate
     int m_gyroSampleCount;                                  // number of gyro samples used
 
+    RTFLOAT m_accelOffset[3];                               // acceleration zero shift calculated from Min/Max data
+    RTFLOAT m_accelScale[3];                                // acceleration scale coefficient calculated from Min/Max data
     RTVector3 m_previousAccel;                              // previous step accel for gyro learning
 
     float m_compassCalOffset[3];
