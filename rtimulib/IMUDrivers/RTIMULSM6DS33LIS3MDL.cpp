@@ -640,7 +640,9 @@ bool RTIMULSM6DS33LIS3MDL::setCompassCTRL7()
 
 int RTIMULSM6DS33LIS3MDL::IMUGetPollInterval()
 {
-    return (400 / m_sampleRate);
+    int interval =  1000 / m_sampleRate;
+    if (interval < 1) interval = 1;
+    return interval;
 }
 
 bool RTIMULSM6DS33LIS3MDL::IMURead()
