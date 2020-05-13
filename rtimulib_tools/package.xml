@@ -30,6 +30,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roslib</build_depend>
+  <build_depend>libqt_opengl_dev</build_depend>
+  <depend>libqt_opengl</depend>
   <depend>rtimulib</depend>
   <!-- build_depend>rtimulib</build_depend -->
   <!--build_export_depend>rtimulib</build_export_depend>
