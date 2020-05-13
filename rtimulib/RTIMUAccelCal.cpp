@@ -25,7 +25,7 @@
 
 //  ACCEL_ALPHA control the smoothing - the lower it is, the smoother it is
 
-#define ACCEL_ALPHA                     0.1f
+#define ACCEL_ALPHA                     0.01f
 
 RTIMUAccelCal::RTIMUAccelCal(RTIMUSettings *settings)
 {
