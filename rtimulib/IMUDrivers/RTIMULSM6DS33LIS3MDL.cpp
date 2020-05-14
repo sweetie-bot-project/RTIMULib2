@@ -472,46 +472,30 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
 
 bool RTIMULSM6DS33LIS3MDL::setCompass()
 {
+    //
+    // sample rate and performance mode for X and Z axes
+    //
+    unsigned char ctrl1 = 0x00;
 
     // OM = 11 (ultra-high-performance mode for X and Y); DO = 100 (10 Hz ODR)
-    //write_reg(LIS3MDL_CTRL_REG1, 0b01110000);
-    //if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL1, 0b01110000, "Failed to set LIS3MDL CTRL1"))
-    //    return false;
+    ctrl1 |= 0b01100000;
 
-
-    unsigned char ctrl1;
-
-    unsigned char OM = 0b01100000;
-    ctrl1 = OM;
-
+    // sample rate
     if ((m_settings->m_LSM6DS33LIS3MDLCompassSampleRate < 0) || (m_settings->m_LSM6DS33LIS3MDLCompassSampleRate > 7)) {
         HAL_ERROR1("Illegal LIS3MDL compass sample rate code %d\n", m_settings->m_LSM6DS33LIS3MDLCompassSampleRate);
         return false;
     }
-
     ctrl1 |= (m_settings->m_LSM6DS33LIS3MDLCompassSampleRate << 2);
 
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-    //  enable fifo
-
-    //ctrl1 |= 0x40; incorrect register, check datasheet if requried
-#endif
-
     if (!m_settings->HALWrite(m_compassSlaveAddr,  LIS3MDL_CTRL1, ctrl1, "Failed to set LIS3MDL CTRL1"))
-    {
         return false;
-    }
 
+    //
+    // sensor scale factor
+    //
+    unsigned char ctrl2 = 0;
 
-    // FS = 00 (+/- 4 gauss full scale)
-    //write_reg(LIS3MDL_CTRL2, 0b00000000);
-    //if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL2, 0b00000000, "Failed to set LIS3MDL CTRL2"))
-    //    return false;
-
-    unsigned char ctrl2;
-
-    //  convert FSR to uT
-
+    // scale factor
     switch (m_settings->m_LSM6DS33LIS3MDLCompassFsr) {
     case LIS3MDL_COMPASS_FSR_4:
         ctrl2 = 0x00;
@@ -539,18 +523,13 @@ bool RTIMULSM6DS33LIS3MDL::setCompass()
     }
 
     if (!m_settings->HALWrite(m_compassSlaveAddr,  LIS3MDL_CTRL2, ctrl2, "Failed to set LIS3MDL CTRL2"))
-    {
         return false;
-    }
 
     // MD = 00 (continuous-conversion mode)
-    //write_reg(LIS3MDL_CTRL3, 0b00000000);
     if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL3, 0x00, "Failed to set LIS3MDL CTRL3"))
         return false;
 
     // OMZ = 11 (ultra-high-performance mode for Z)
-    //write_reg(LIS3MDL_CTRL4, 0b00001100);
-    //if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL4, 0b00001100, "Failed to set LIS3MDL CTRL4"))
     if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL4, 0b00001100, "Failed to set LIS3MDL CTRL4"))
         return false;
  
