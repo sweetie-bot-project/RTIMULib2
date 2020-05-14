@@ -1817,7 +1817,8 @@ bool RTIMUSettings::saveSettings()
     setBlank();
     setComment("");
     setComment("Gyro high pass filter - ");
-    setComment("  0 - 9 but see the LSM6DS33 manual for details");
+    setComment("  -1 to disable");
+    setComment("  0 - 3 but see the LSM6DS33 manual for details");
     setValue(RTIMULIB_LSM6DS33LIS3MDL_GYRO_HPF, m_LSM6DS33LIS3MDLGyroHpf);
 
 
@@ -1847,16 +1848,7 @@ bool RTIMUSettings::saveSettings()
 
     setBlank();
     setComment("");
-    setComment("Accel high pass filter - ");
-    setComment("  0 = ODR_XL/50Hz");
-    setComment("  1 = ODR_XL/100Hz");
-    setComment("  2 = ODR_XL/9Hz");
-    setComment("  3 = ODR_XL/400Hz");
-    setValue(RTIMULIB_LSM6DS33LIS3MDL_ACCEL_HPF, m_LSM6DS33LIS3MDLAccelHpf);
-
-    setBlank();
-    setComment("");
-    setComment("Accel low pass filter - ");
+    setComment("Accel analog low pass filter - ");
     setComment("  0 = 400Hz");
     setComment("  1 = 200Hz");
     setComment("  2 = 100Hz");

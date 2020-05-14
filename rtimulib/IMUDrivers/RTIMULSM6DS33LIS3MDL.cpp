@@ -189,31 +189,30 @@ bool RTIMULSM6DS33LIS3MDL::IMUInit()
 bool RTIMULSM6DS33LIS3MDL::setGyro()
 {
     unsigned char ctrl2_g;
-    unsigned char lowOdr = 0;     // high speed enabled lowOdr = 0
-    unsigned char powerMode = 0;  // high speed enabled -> powerMode = 0, low power and normal mode -> powerMode = 1
 
+    //
+    // gyro sample rate and scale factor
+    //
+
+    // sample rate
     switch (m_settings->m_LSM6DS33LIS3MDLGyroSampleRate) {
     case LSM6DS33_SAMPLERATE_0:
         ctrl2_g = 0x00;
-        powerMode = 1;
         m_sampleRate = 0;
         break;
 
     case LSM6DS33_SAMPLERATE_13:
         ctrl2_g = 0x10;
-        powerMode = 1;
         m_sampleRate = 13;
         break;
 
     case LSM6DS33_SAMPLERATE_26:
         ctrl2_g = 0x20;
-        powerMode = 1;
         m_sampleRate = 26;
         break;
 
     case LSM6DS33_SAMPLERATE_52:
         ctrl2_g = 0x30;
-        powerMode = 1;
         m_sampleRate = 52;
         break;
 
@@ -246,10 +245,9 @@ bool RTIMULSM6DS33LIS3MDL::setGyro()
         HAL_ERROR1("Illegal LSM6DS33 sample rate code %d\n", m_settings->m_LSM6DS33LIS3MDLGyroSampleRate);
         return false;
     }
-
     m_sampleInterval = (uint64_t)1000000 / m_sampleRate;
 
-
+    // gyro scale factor
     switch (m_settings->m_LSM6DS33LIS3MDLGyroFsr) {
     case LSM6DS33_FSR_125:
         ctrl2_g |= 0x02;
@@ -281,32 +279,34 @@ bool RTIMULSM6DS33LIS3MDL::setGyro()
         return false;
     }
 
-    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL2_G, ctrl2_g, "Failed to set LSM6DS33 CTRL2_G"))
-	return false;
-    
     //std::cout << "Writing CTRL2_G " << static_cast<unsigned>(ctrl2_g) << std::endl;
-    
-    unsigned char regData;
-    m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_CTRL2_G, 1, &regData, "Failed to read LSM6DS33 CTRL2_G");
+    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL2_G, ctrl2_g, "Failed to set LSM6DS33 CTRL2_G"))
+        return false;
 
-    if ((m_settings->m_GD20HM303DGyroHpf < LSM6DS33_HPF_0) || (m_settings->m_LSM6DS33LIS3MDLGyroHpf > LSM6DS33_HPF_3))
-    {
+    // setup HPF configuration
+    unsigned char hpgEn;
+    unsigned char gyroHpf;
+    if (m_settings->m_LSM6DS33LIS3MDLGyroHpf == -1) {
+        // HPF filter is disabled
+        hpgEn = 0;
+        gyroHpf = 0;
+    }
+    else if ((m_settings->m_LSM6DS33LIS3MDLGyroHpf >= LSM6DS33_HPF_0) || (m_settings->m_LSM6DS33LIS3MDLGyroHpf <= LSM6DS33_HPF_3)) {
+        // HPF filter is enabled
+        hpgEn = 1;
+        gyroHpf = m_settings->m_LSM6DS33LIS3MDLGyroHpf;
+    }
+    else {
         HAL_ERROR1("Illegal LSM6DS33 high pass filter code %d\n", m_settings->m_LSM6DS33LIS3MDLGyroHpf);
         return false;
     }
 
-    unsigned char hpgEn = 1;
-
-    unsigned char gyroHpf = m_settings->m_LSM6DS33LIS3MDLGyroHpf;
-
     // G_HM_MODE, HP_G_EN, HPCF_G1, HPCF_G0, HP_G_RST, ROUNDING_STATUS, 0, 0
-    unsigned char ctrl7_g = (powerMode<<7) | (hpgEn<<6) | (gyroHpf<<4) | 0x00;    
+    unsigned char ctrl7_g = (hpgEn<<6) | (gyroHpf<<4);
  
     //std::cout << "Writing CTRL7_G " << static_cast<unsigned>(ctrl7_g) << std::endl;
-    
     if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL7_G, ctrl7_g, "Failed to set LSM6DS33 CTRL7_G"))
         return false;
-
 
     std::cout << "LSM6DS33 Gyro set" << std::endl;
     return true;
@@ -335,37 +335,30 @@ bool RTIMULSM6DS33LIS3MDL::setGyroCTRL5()
 bool RTIMULSM6DS33LIS3MDL::setAccel()
 {
     unsigned char ctrl1_xl;
-    unsigned char powerMode = 0;  // high speed enabled -> powerMode = 0, low power and normal mode -> powerMode = 1
 
+    //
+    // set sample rate, analog LPF and scale factor
+    //
 
-    if ((m_settings->m_GD20HM303DAccelSampleRate < 0) || (m_settings->m_GD20HM303DAccelSampleRate > 10)) 
-    {
-        HAL_ERROR1("Illegal LSM303D accel sample rate code %d\n", m_settings->m_GD20HM303DAccelSampleRate);
-        return false;
-    }
-
+    // sample rate
     switch (m_settings->m_LSM6DS33LIS3MDLAccelSampleRate) {
     case LSM6DS33_ACCEL_SAMPLERATE_0:
         ctrl1_xl = 0x00;
-        powerMode = 1;
         m_sampleRate = 0;
         break;
 
     case LSM6DS33_ACCEL_SAMPLERATE_13:
         ctrl1_xl = 0x10;
-        powerMode = 1;
         m_sampleRate = 13;
         break;
 
     case LSM6DS33_ACCEL_SAMPLERATE_26:
         ctrl1_xl = 0x20;
-        powerMode = 1;
         m_sampleRate = 26;
         break;
 
     case LSM6DS33_ACCEL_SAMPLERATE_52:
         ctrl1_xl = 0x30;
-        powerMode = 1;
         m_sampleRate = 52;
         break;
 
@@ -408,10 +401,9 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
         HAL_ERROR1("Illegal LSM6DS33 sample rate code %d\n", m_settings->m_LSM6DS33LIS3MDLAccelSampleRate);
         return false;
     }
-
     m_sampleInterval = (uint64_t)1000000 / m_sampleRate;
 
-
+    // scale factor
     switch (m_settings->m_LSM6DS33LIS3MDLAccelFsr) {
     case LSM6DS33_ACCEL_FSR_2:
         ctrl1_xl |= (0x00<<2);
@@ -438,7 +430,7 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
         return false;
     }
 
-
+    // analog LPF configuration
     switch (m_settings->m_LSM6DS33LIS3MDLAccelLpf) {
     case LSM6DS33_ACCEL_LPF_400:
         ctrl1_xl |= 0x00;
@@ -458,29 +450,19 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
 
     }
 
-    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL1_XL, ctrl1_xl, "Failed to set LSM6DS33 CTRL1_XL"))
-	return false;
-
     //std::cout << "Writing LSM6DS33 CTRL1_XL: " << static_cast<unsigned>(ctrl1_xl) << std::endl;
-
-    if ((m_settings->m_LSM6DS33LIS3MDLAccelHpf < LSM6DS33_ACCEL_HPF_0) || (m_settings->m_LSM6DS33LIS3MDLAccelHpf > LSM6DS33_ACCEL_HPF_3)) 
-    {
-        HAL_ERROR1("Illegal LSM6DS33 high pass filter code %d\n", m_settings->m_LSM6DS33LIS3MDLAccelHpf);
+    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL1_XL, ctrl1_xl, "Failed to set LSM6DS33 CTRL1_XL"))
         return false;
-    }
 
-    unsigned char LPF2_XL_EN = 0;
-    unsigned char HP_SLOPE_XL_EN = 0;
-    unsigned char LOW_PASS_ON_6D = 0;
-
-    unsigned char accelHpf = m_settings->m_LSM6DS33LIS3MDLAccelHpf;
-
-    // LPF2_XL_EN, HPCF_XL1, HPCF_XL0, 0, 0, HP_SLOPE_XL_EN, 0, LOW_PASS_ON_6D
-    unsigned char ctrl8_xl = (LPF2_XL_EN<<7) | (accelHpf<<5) | (HP_SLOPE_XL_EN<<2) | (HP_SLOPE_XL_EN<<0) | 0x00;
-
-    //std::cout << "Writing LSM6DS33 CTRL8_XL: " << static_cast<unsigned>(ctrl8_xl) << std::endl;
-
-    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL8_XL, ctrl8_xl, "Failed to set LSM6DS33 CTRL8_XL"))
+    //
+    // disable analog low-pass filter bandwidth scaling depending on sample rate settings.
+    // bandwidth should be determined by LPF setting above
+    //
+ 
+    // XL_BW_SCAL_ODR, SLEEP_G, INT2_ON_INT1, FIFO_TEMP_EN, DRDY_MASK, I2C_DISABLE, 0, STOP_ON_FTH
+    unsigned char ctrl4_c = 0x80;
+    //std::cout << "Writing LSM6DS33 CTRL4_C: " << static_cast<unsigned>(ctrl4_c) << std::endl;
+    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL4_C, ctrl4_c, "Failed to set LSM6DS33 CTRL4_C"))
         return false;
 
     std::cout << "LSM6DS33 Accel set" << std::endl;
@@ -488,7 +470,7 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
 
 }
 
-bool RTIMULSM6DS33LIS3MDL::setCompass() 
+bool RTIMULSM6DS33LIS3MDL::setCompass()
 {
 
     // OM = 11 (ultra-high-performance mode for X and Y); DO = 100 (10 Hz ODR)
@@ -571,7 +553,7 @@ bool RTIMULSM6DS33LIS3MDL::setCompass()
     //if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL4, 0b00001100, "Failed to set LIS3MDL CTRL4"))
     if (!m_settings->HALWrite(m_compassSlaveAddr, LIS3MDL_CTRL4, 0b00001100, "Failed to set LIS3MDL CTRL4"))
         return false;
-    
+ 
     std::cout << "LIS3MDL Compass set" << std::endl; 
     return true;
 }
