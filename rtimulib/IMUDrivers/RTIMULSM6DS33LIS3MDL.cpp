@@ -609,10 +609,8 @@ int RTIMULSM6DS33LIS3MDL::IMUGetPollInterval()
 bool RTIMULSM6DS33LIS3MDL::IMURead()
 {
     unsigned char status;
-    unsigned char gyroData[6];
-    unsigned char accelData[6];
+    unsigned char imuData[12];
     unsigned char compassData[6];
-
 
 #ifdef LSM6DS33LIS3MDL_CACHE_MODE
 /*
@@ -734,9 +732,9 @@ bool RTIMULSM6DS33LIS3MDL::IMURead()
     // XLDA:    Accelerometer new data available. Default value: 0
     //          0: no set of data available at accelerometer output
     //          1: a new set of data is available at accelerometer output
+    /*
     if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_STATUS_REG, 1, &status, "Failed to read LSM6DS33 status"))
         return false;
-    /*
     if ((status & 0x8) == 0)
     {
         std::cout << "STATUS ERROR -> RETURN" << std::endl;
@@ -744,26 +742,23 @@ bool RTIMULSM6DS33LIS3MDL::IMURead()
     }
     */
 
-    if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_OUTX_L_G, 6, gyroData, "Failed to read LSM6DS33 data"))
+	// bulk read: gyro and accel data
+    m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
+    if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_OUTX_L_G, 12, imuData, "Failed to read LSM6DS33 data"))
         return false;
 
     /*
     std::cout << "Gyro Data: "
-    << "  X " << static_cast<int16_t>(gyroData[0] | gyroData[1] << 8) * m_gyroScale 
-    << "; Y " << static_cast<int16_t>(gyroData[2] | gyroData[3] << 8) * m_gyroScale
-    << "; Z " << static_cast<int16_t>(gyroData[4] | gyroData[5] << 8) * m_gyroScale << std::endl;
+    << "  X " << static_cast<int16_t>(imuData[0] | imuData[1] << 8) * m_imuScale 
+    << "; Y " << static_cast<int16_t>(imuData[2] | imuData[3] << 8) * m_imuScale
+    << "; Z " << static_cast<int16_t>(imuData[4] | imuData[5] << 8) * m_imuScale << std::endl;
     */
 
-    m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
-
-    if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_OUTX_L_XL, 6, accelData, "Failed to read LSM6DS33 accel data"))
-        return false;
-    
     /*
     std::cout << "Accel Data: "
-    << "  X " << static_cast<int16_t>(accelData[0] | accelData[1] << 8) 
-    << "; Y " << static_cast<int16_t>(accelData[2] | accelData[3] << 8)
-    << "; Z " << static_cast<int16_t>(accelData[4] | accelData[5] << 8) << std::endl;
+    << "  X " << static_cast<int16_t>(imuData[6] | imuData[7] << 8) 
+    << "; Y " << static_cast<int16_t>(imuData[8] | imuData[9] << 8)
+    << "; Z " << static_cast<int16_t>(imuData[10] | imuData[11] << 8) << std::endl;
     */
 
     if (!m_settings->HALRead(m_compassSlaveAddr, 0x80 | LIS3MDL_OUT_X_L, 6, compassData, "Failed to read LIS3MDL compass data"))
@@ -775,28 +770,11 @@ bool RTIMULSM6DS33LIS3MDL::IMURead()
     << "; Y " << static_cast<int16_t>(compassData[2] | compassData[3] << 8)
     << "; Z " << static_cast<int16_t>(compassData[4] | compassData[5] << 8) << std::endl;
     */
-
-
 #endif
 
-    RTMath::convertToVector(gyroData, m_imuData.gyro, m_gyroScale, false);
-    RTMath::convertToVector(accelData, m_imuData.accel, m_accelScale, false);
+    RTMath::convertToVector(imuData, m_imuData.gyro, m_gyroScale, false);
+    RTMath::convertToVector(imuData + 6, m_imuData.accel, m_accelScale, false);
     RTMath::convertToVector(compassData, m_imuData.compass, m_compassScale, false);
-
-    //  sort out gyro axes
-    m_imuData.gyro.setX(m_imuData.gyro.x());
-    m_imuData.gyro.setY(m_imuData.gyro.y());
-    m_imuData.gyro.setZ(m_imuData.gyro.z());
-
-    //  sort out accel data;
-    m_imuData.accel.setX(m_imuData.accel.x());
-    m_imuData.accel.setY(m_imuData.accel.y());
-    m_imuData.accel.setZ(m_imuData.accel.z());
-
-    //  sort out compass axes
-    m_imuData.compass.setX(m_imuData.compass.x());
-    m_imuData.compass.setY(m_imuData.compass.y());
-    m_imuData.compass.setZ(m_imuData.compass.z());
 
     //  now do standard processing
     handleGyroBias();
