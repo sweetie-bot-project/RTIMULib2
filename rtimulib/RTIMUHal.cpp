@@ -210,7 +210,7 @@ bool RTIMUHal::ifWrite(unsigned char *data, unsigned char length)
 }
 
 
-bool RTIMUHal::HALRead(unsigned char slaveAddr, unsigned char regAddr, unsigned char length,
+bool RTIMUHal::HALRead(unsigned char slaveAddr, unsigned char regAddr, unsigned int length,
                     unsigned char *data, const char *errorMsg)
 {
     int tries, result, total;

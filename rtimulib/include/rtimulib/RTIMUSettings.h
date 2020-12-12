@@ -91,6 +91,7 @@
 
 #define RTIMULIB_LSM6DS33LIS3MDL_COMPASS_SAMPLERATE  "LSM6DS33LIS3MDLCompassSampleRate"
 #define RTIMULIB_LSM6DS33LIS3MDL_COMPASS_FSR         "LSM6DS33LIS3MDLCompassFsr"
+#define RTIMULIB_LSM6DS33LIS3MDL_FIFO_MODE           "LSM6DS33LIS3MDLFIFOMode"
 
 
 //  GD20M303DLHC settings keys
@@ -315,6 +316,8 @@ public:
 
     int m_LSM6DS33LIS3MDLCompassSampleRate;                  // the compass sample rate
     int m_LSM6DS33LIS3MDLCompassFsr;                         // the compass full scale range
+
+    int m_LSM6DS33LIS3MDLFIFOMode;                           // FIFO mode
 
     //  GD20M303DLHC
 

@@ -890,6 +890,8 @@ bool RTIMUSettings::loadSettings()
             m_LSM6DS33LIS3MDLCompassSampleRate = atoi(val);
         } else if (strcmp(key, RTIMULIB_LSM6DS33LIS3MDL_COMPASS_FSR) == 0) {
             m_LSM6DS33LIS3MDLCompassFsr = atoi(val);
+        } else if (strcmp(key, RTIMULIB_LSM6DS33LIS3MDL_FIFO_MODE) == 0) {
+            m_LSM6DS33LIS3MDLFIFOMode = atoi(val);
 
         //  GD20M303DLHC settings
 
@@ -1875,6 +1877,13 @@ bool RTIMUSettings::saveSettings()
     setComment("  2 = +/- 800 uT ");
     setComment("  3 = +/- 1200 uT ");
     setValue(RTIMULIB_LSM6DS33LIS3MDL_COMPASS_FSR, m_LSM6DS33LIS3MDLCompassFsr);
+
+    setBlank();
+    setComment("");
+    setComment("FIFO mode - ");
+    setComment("  0 = disabled ");
+    setComment("  1 = enabled ");
+    setValue(RTIMULIB_LSM6DS33LIS3MDL_FIFO_MODE, m_LSM6DS33LIS3MDLFIFOMode);
 
     fclose(m_fd);
     return true;

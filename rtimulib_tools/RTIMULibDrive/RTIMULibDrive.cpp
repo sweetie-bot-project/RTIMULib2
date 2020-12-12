@@ -26,6 +26,7 @@
 
 int main()
 {
+    setbuf(stdout, nullptr);
     int sampleCount = 0;
     int sampleRate = 0;
     uint64_t rateTimer;
@@ -68,19 +69,21 @@ int main()
     while (1) {
         //  poll at the rate recommended by the IMU
 
-        usleep(imu->IMUGetPollInterval() * 1000);
+        usleep(10000); // imu->IMUGetPollInterval() * 10000);
 
         while (imu->IMURead()) {
+            usleep(10000); // imu->IMUGetPollInterval() * 10000);
             RTIMU_DATA imuData = imu->getIMUData();
             sampleCount++;
 
+            /*
             now = RTMath::currentUSecsSinceEpoch();
 
             //  display 10 times per second
 
             if ((now - displayTimer) > 100000) {
-                printf("Sample rate %d: %s\r", sampleRate, RTMath::displayDegrees("", imuData.fusionPose));
-                fflush(stdout);
+                //printf("Sample rate %d: %s\r", sampleRate, RTMath::displayDegrees("", imuData.fusionPose));
+                //fflush(stdout);
                 displayTimer = now;
             }
 
@@ -90,7 +93,7 @@ int main()
                 sampleRate = sampleCount;
                 sampleCount = 0;
                 rateTimer = now;
-            }
+            }*/
         }
     }
 }

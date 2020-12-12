@@ -44,10 +44,6 @@ bool RTIMULSM6DS33LIS3MDL::IMUInit()
 {
     unsigned char result;
 
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-    m_firstTime = true;
-    m_cacheIn = m_cacheOut = m_cacheCount = 0;
-#endif
     // set validity flags
 
     m_imuData.fusionPoseValid = false;
@@ -127,7 +123,7 @@ bool RTIMULSM6DS33LIS3MDL::IMUInit()
     //  Set up the gyro/accel
 
     // IF_INC = 1 (automatically increment address register)
-    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL3_C, 0x04, "Failed to set LSM6DS33 automatic register address increment"))
+    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL3_C, LSM6DS33_CTRL3_C_IF_INC, "Failed to set LSM6DS33 automatic register address increment"))
     {
         std::cout << "Error setting LSM6DS33 gyroscope" << std::endl;
         return false;
@@ -150,6 +146,10 @@ bool RTIMULSM6DS33LIS3MDL::IMUInit()
         std::cout << "LSM6DS33 accelerometer set" << std::endl;
     }
 
+    if(m_settings->m_LSM6DS33LIS3MDLFIFOMode)
+      if(!setFIFO())
+        return false;
+
     //  Set up the compass
     //std::cout << "Trying to read from compassSlaveAddr: " << static_cast<unsigned>(m_compassSlaveAddr) << std::endl;
     if (!m_settings->HALRead(m_compassSlaveAddr, LIS3MDL_WHO_AM_I, 1, &result, "Failed to read LIS3MDL id"))
@@ -170,15 +170,6 @@ bool RTIMULSM6DS33LIS3MDL::IMUInit()
         std::cout << "LIS3MDL compass set" << std::endl;
     }
 
-/*
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-
-    //  turn on gyro fifo
-
-    if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL, 0x3f, "Failed to set LSM6DS33 FIFO mode"))
-        return false;
-#endif
-*/
     //std::cout << "Calculating gyro bias" << std::endl;
     gyroBiasInit();
 
@@ -367,7 +358,7 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
         m_sampleRate = 104;
         break;
 
-    case LSM6DS33_SAMPLERATE_208:
+    case LSM6DS33_ACCEL_SAMPLERATE_208:
         ctrl1_xl = 0x50;
         m_sampleRate = 208;
         break;
@@ -470,6 +461,71 @@ bool RTIMULSM6DS33LIS3MDL::setAccel()
 
 }
 
+bool RTIMULSM6DS33LIS3MDL::setFIFO()
+{
+  // To reset FIFO set it to bypass at first
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL5, LSM6DS33_FIFO_CTRL5_MODE_BYPASS, "Failed to set LSM6DS33 FIFO_CTRL5"))
+      return false;
+
+  // LSM6DS33 datasheet, page 46-54
+  // TODO del
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL1_XL,  LSM6DS33_CTRL1_ODR_XL_104HZ | LSM6DS33_CTRL1_FS_XL_2G | LSM6DS33_CTRL1_BW_XL_400HZ, "Failed to set LSM6DS33 CTRL1_XL"))
+      return false;
+
+  // 104 Hz (high performance), 245 dps (degrees per second), full scale disabled
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL2_G,   LSM6DS33_CTRL2_ODR_G_104HZ | LSM6DS33_CTRL2_FS_G_125DPS, "Failed to set LSM6DS33 CTRL2_G"))
+    return false;
+
+  // When the FIFO is used, the IF_INC bit of the CTRL3_C register must be equal to 1.
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL3_C,   LSM6DS33_CTRL3_C_IF_INC, "Failed to set LSM6DS33 CTRL3_C"))
+    return false;
+
+  /* When FIFO is active and the DRDY_MASK bit is set to 1, accelerometer invalid samples
+stored in FIFO are always equal to 7FFFh; gyroscope invalid samples stored in FIFO can be
+equal to 7FFFh, 7FFEh or 7FFDh. In this way, a tag is applied to the invalid samples stored
+in the FIFO buffer, so that they can be easily identified and discarded during data post-
+processing.
+  */
+  // TODO del
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL4_C,   LSM6DS33_CTRL4_C_DRDY_MASK, "Failed to set LSM6DS33 CTRL4_C"))
+    return false;
+  // rounding
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL5_C,   LSM6DS33_CTRL5_C_BOTH_ROUNDING, "Failed to set LSM6DS33 CTRL5_C"))
+    return false;
+  // Angular rate sensor control register 6
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL6_C,   0x00, "Failed to set LSM6DS33 CTRL6_C")) // LSM6DS33_CTRL6_C_XL_HM_MODE);
+    return false;
+  // Angular rate sensor control register 7
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL7_G,   0x00, "Failed to set LSM6DS33 CTRL7_G")) // LSM6DS33_CTRL6_C_XL_HM_MODE);
+    return false;
+  // Linear acceleration sensor control register 8
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL8_XL,  0x00, "Failed to set LSM6DS33 CTRL8_XL"))
+    return false;
+  // Linear acceleration sensor control register 9
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL9_XL,  LSM6DS33_CTRL9_XL_ZEN_G | LSM6DS33_CTRL9_XL_YEN_G | LSM6DS33_CTRL9_XL_XEN_G, "Failed to set LSM6DS33 CTRL9_XL"))
+    return false;
+  // Control register 10
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_CTRL10_C,  LSM6DS33_CTRL10_C_ZEN_G | LSM6DS33_CTRL10_C_YEN_G | LSM6DS33_CTRL10_C_XEN_G, "Failed to set LSM6DS33 CTRL10_C"))
+    return false;
+  // FIFO control register 1
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL1, LSM6DS33_FIFO_CTRL1_FTH_OFF, "Failed to set LSM6DS33 FIFO_CTRL1")) // FIFO threshold level off
+    return false;
+  // FIFO control register 2
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL2, LSM6DS33_FIFO_CTRL2_FTH_OFF, "Failed to set LSM6DS33 FIFO_CTRL2")) // FIFO threshold level off
+    return false;
+  // No decimation (downsampling) for gyro and acc
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL3, LSM6DS33_FIFO_CTRL3_GYRO_NO_DECIMATION | LSM6DS33_FIFO_CTRL3_XL_NO_DECIMATION, "Failed to set LSM6DS33 FIFO_CTRL3"))
+    return false;
+  // Disable timer
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL4, LSM6DS33_FIFO_CTRL4_PEDO_NOT_IN_FIFO, "Failed to set LSM6DS33 FIFO_CTRL4"))
+    return false;
+  // FIFO ODR 833Hz, FIFO continous mode
+  if (!m_settings->HALWrite(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_CTRL5, LSM6DS33_FIFO_CTRL5_MODE_CONTINOUS | LSM6DS33_FIFO_CTRL5_ODR_FIFO_104HZ, "Failed to set LSM6DS33 FIFO_CTRL5"))
+    return false;
+
+  return true;
+}
+
 bool RTIMULSM6DS33LIS3MDL::setCompass()
 {
     //
@@ -549,12 +605,6 @@ bool RTIMULSM6DS33LIS3MDL::setCompassCTRL5()
 
     ctrl5 = (m_settings->m_LSM6DS33LIS3MDLCompassSampleRate << 2);
 
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-    //  enable fifo
-
-    ctrl5 |= 0x40;
-#endif
-
     return m_settings->HALWrite(m_compassSlaveAddr,  LIS3MDL_CTRL5, ctrl5, "Failed to set LIS3MDL CTRL5");
 }
 
@@ -606,183 +656,181 @@ int RTIMULSM6DS33LIS3MDL::IMUGetPollInterval()
     return interval;
 }
 
+ssize_t RTIMULSM6DS33LIS3MDL::read_fifo_status()
+{
+  if(!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_STATUS1, 4, data, "Failed to read LSM6DS33 data"))
+    return -1;
+  fifo_empty   = data[1] & LSM6DS33_FIFO_EMPTY;
+  fifo_full    = data[1] & LSM6DS33_FIFO_FULL;
+  fifo_overrun = data[1] & LSM6DS33_FIFO_OVER_RUN;
+  fifo_pattern = (data[3] & LSM6DS33_FIFO_STATUS4_FIFO_PATTERN)*256 + data[2];
+
+  if(fifo_pattern>samples_in_chunk)
+    return -2;
+
+  if(fifo_pattern>0){
+    unsigned int bad_samples_in_buffer = (samples_in_chunk-fifo_pattern);
+    total_droped_chunks++;
+    total_droped_samples += bad_samples_in_buffer;
+    total_droped_bytes += bad_samples_in_buffer*2;
+    first_valid_chunk_addr = (samples_in_chunk-fifo_pattern)*2;;
+  }else
+    first_valid_chunk_addr = 0;
+
+  n_samples = (data[1] & LSM6DS33_FIFO_STATUS2_DIFF_MASK)*256 + data[0];
+  n_chunks  = n_samples/6;
+  n_bytes   = n_samples*2;
+
+  return n_chunks;
+}
+
+bool RTIMULSM6DS33LIS3MDL::read_fifo(unsigned int chunks)
+{
+  if(chunks<1) return false;
+  if(!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_DATA_OUT_L, (chunks*12) , data, "Failed to read LSM6DS33 FIFO data"))
+    return false;
+  return true;
+}
+
+bool RTIMULSM6DS33LIS3MDL::convert_chunk(unsigned int chunk)
+{
+  if(chunk>n_chunks)
+    return false;
+
+  unsigned int gyro_addr = first_valid_chunk_addr + (chunk * 12);
+  unsigned int accel_addr = gyro_addr+6;
+  unsigned int sample;
+
+  m_imuData.gyroValid = false;
+  for(unsigned char i=0; i<3; i++)
+  {
+    sample = ((data[gyro_addr+1+(i*2)]*256)  + data[gyro_addr+(i*2)]);
+    if( !m_imuData.gyroValid )
+     m_imuData.gyroValid = ( ( (sample-1) ^ LSM6DS33_FIFO_G_INVALID_VALUE_MASK ) > 0b11); // not 7FFFh, 7FFEh or 7FFDh
+
+    m_imuData.gyro.setData( i, sample*m_gyroScale );
+  }
+
+  m_imuData.accelValid = false;
+  for(unsigned char i=0; i<3; i++){
+    sample = ((data[accel_addr+1+(i*2)]*256) + data[accel_addr+(i*2)]);
+    if( !m_imuData.accelValid )
+      m_imuData.accelValid = ( sample != LSM6DS33_FIFO_XL_INVALID_VALUE ); // not 7FFFh
+
+    m_imuData.accel.setData( i, sample*m_accelScale );
+  }
+  return m_imuData.gyroValid & m_imuData.accelValid;
+}
+
 bool RTIMULSM6DS33LIS3MDL::IMURead()
 {
-    unsigned char status;
-    unsigned char imuData[12];
-    unsigned char compassData[6];
-
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-/*
-    int count;
-
-    if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_FIFO_SRC, 1, &status, "Failed to read LSM6DS33 fifo status"))
-        return false;
-
-    if ((status & 0x40) != 0) {
-        HAL_INFO("LSM6DS33 fifo overrun\n");
-        if (!m_settings->HALWrite(m_gyroSlaveAddr, LSM6DS33_CTRL5, 0x10, "Failed to set LSM6DS33 CTRL5"))
-            return false;
-
-        if (!m_settings->HALWrite(m_gyroSlaveAddr, LSM6DS33_FIFO_CTRL, 0x0, "Failed to set LSM6DS33 FIFO mode"))
-            return false;
-
-        if (!m_settings->HALWrite(m_gyroSlaveAddr, LSM6DS33_FIFO_CTRL, 0x3f, "Failed to set LSM6DS33 FIFO mode"))
-            return false;
-
-        if (!setGyroCTRL5())
-            return false;
-
-        m_imuData.timestamp += m_sampleInterval * 32;
-        return false;
-    }
-
-    // get count of samples in fifo
-    count = status & 0x1f;
-
-    if ((m_cacheCount == 0) && (count > 0) && (count < LSM6DS33LIS3MDL_FIFO_THRESH)) {
-        // special case of a small fifo and nothing cached - just handle as simple read
-
-        if (!m_settings->HALRead(m_gyroAccelSlaveAddr, 0x80 | LSM6DS33_OUT_X_L, 6, gyroData, "Failed to read LSM6DS33 data"))
-            return false;
-
-        if (!m_settings->HALRead(m_gyroAccelSlaveAddr, 0x80 | LSM6DS33_OUT_X_L_A, 6, accelData, "Failed to read LSM6DS33 accel data"))
-            return false;
-
-        if (!m_settings->HALRead(m_compassSlaveAddr, 0x80 | LIS3MDL_OUT_X_L_M, 6, compassData, "Failed to read LIS3MDL compass data"))
-            return false;
-
-        if (m_firstTime)
-            m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
-        else
-            m_imuData.timestamp += m_sampleInterval;
-
-        m_firstTime = false;
-    } else {
-        if (count >=  LSM6DS33LIS3MDL_FIFO_THRESH) {
-            // need to create a cache block
-
-            if (m_cacheCount == LSM6DS33LIS3MDL_CACHE_BLOCK_COUNT) {
-                // all cache blocks are full - discard oldest and update timestamp to account for lost samples
-                m_imuData.timestamp += m_sampleInterval * m_cache[m_cacheOut].count;
-                if (++m_cacheOut == LSM6DS33LIS3MDL_CACHE_BLOCK_COUNT)
-                    m_cacheOut = 0;
-                m_cacheCount--;
-            }
-
-            if (!m_settings->HALRead(m_gyroAccelSlaveAddr, 0x80 | LSM6DS33_OUT_X_L, LSM6DS33LIS3MDL_FIFO_CHUNK_SIZE * LSM6DS33LIS3MDL_FIFO_THRESH,
-                         m_cache[m_cacheIn].data, "Failed to read LSM6DS33 fifo data"))
-                return false;
-
-            if (!m_settings->HALRead(m_gyroAccelSlaveAddr, 0x80 | LSM6DS33_OUT_X_L_A, 6,
-                         m_cache[m_cacheIn].accel, "Failed to read LSM6DS33 accel data"))
-                return false;
-
-            if (!m_settings->HALRead(m_compassSlaveAddr, 0x80 | LIS3MDL_OUT_X_L_M, 6,
-                         m_cache[m_cacheIn].compass, "Failed to read LIS3MDL compass data"))
-                return false;
-
-            m_cache[m_cacheIn].count = LSM6DS33LIS3MDL_FIFO_THRESH;
-            m_cache[m_cacheIn].index = 0;
-
-            m_cacheCount++;
-            if (++m_cacheIn == LSM6DS33LIS3MDL_CACHE_BLOCK_COUNT)
-                m_cacheIn = 0;
-
-        }
-
-        //  now fifo has been read if necessary, get something to process
-
-        if (m_cacheCount == 0)
-            return false;
-
-        memcpy(gyroData, m_cache[m_cacheOut].data + m_cache[m_cacheOut].index, LSM6DS33LIS3MDL_FIFO_CHUNK_SIZE);
-        memcpy(accelData, m_cache[m_cacheOut].accel, 6);
-        memcpy(compassData, m_cache[m_cacheOut].compass, 6);
-
-        m_cache[m_cacheOut].index += LSM6DS33LIS3MDL_FIFO_CHUNK_SIZE;
-
-        if (--m_cache[m_cacheOut].count == 0) {
-            //  this cache block is now empty
-
-            if (++m_cacheOut == GD20HM303D_CACHE_BLOCK_COUNT)
-                m_cacheOut = 0;
-            m_cacheCount--;
-        }
-        if (m_firstTime)
-            m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
-        else
-            m_imuData.timestamp += m_sampleInterval;
-
-        m_firstTime = false;
-    }
-*/
-#else
-
-    // STATUS_REG
-    // -, -, -, -, EV_BOOT, TDA, GDA, XLDA
-    // EV_BOOT: Boot running flag signal. Default value: 0
-    //          0: no boot running; 1: boot running
-    // TDA:     Temperature new data available. Default value: 0
-    //          0: no set of data is available at temperature sensor output;
-    //          1: a new set of data is available at temperature sensor output
-    // GDA:     Gyroscope new data available. Default value: 0
-    //          0: no set of data available at gyroscope output
-    //          1: a new set of data is available at gyroscope sensor output
-    // XLDA:    Accelerometer new data available. Default value: 0
-    //          0: no set of data available at accelerometer output
-    //          1: a new set of data is available at accelerometer output
-    /*
-    if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_STATUS_REG, 1, &status, "Failed to read LSM6DS33 status"))
-        return false;
-    if ((status & 0x8) == 0)
+    if(m_settings->m_LSM6DS33LIS3MDLFIFOMode)
     {
-        std::cout << "STATUS ERROR -> RETURN" << std::endl;
+      ssize_t chunks_in_fifo = read_fifo_status();
+      switch(chunks_in_fifo)
+      {
+        case -1: printf("Read failed\n");
+          return -1;
+        case -2: printf("Wrong fifo pattern %d\n", fifo_pattern);
+          return -2;
+        case -3: printf("Readed too many chunks\n");
+          return -3;
+      }
+
+      printf("n_chunks=%d ", n_chunks);
+      if(n_chunks < 2)
+        return true;
+
+      bool ret = read_fifo((n_chunks-1));
+      if(!ret)
         return false;
+
+      m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
+
+      unsigned int chunks_readed = (n_chunks-1);
+
+      int count = 0;
+      for(unsigned int chunk=0; chunk < chunks_readed; chunk++)
+      {
+        count++;
+
+        ret = convert_chunk(chunk);
+      }
+      //  now do standard processing
+      handleGyroBias();
+      calibrateAverageCompass();
+      calibrateAccel();
+
+      //  now update the filter
+      updateFusion();
     }
-    */
+    else
+    {
+      //unsigned char status;
+      unsigned char imuData[12];
+      unsigned char compassData[6];
 
-	// bulk read: gyro and accel data
-    m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
-    if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_OUTX_L_G, 12, imuData, "Failed to read LSM6DS33 data"))
-        return false;
+        // STATUS_REG
+        // -, -, -, -, EV_BOOT, TDA, GDA, XLDA
+        // EV_BOOT: Boot running flag signal. Default value: 0
+        //          0: no boot running; 1: boot running
+        // TDA:     Temperature new data available. Default value: 0
+        //          0: no set of data is available at temperature sensor output;
+        //          1: a new set of data is available at temperature sensor output
+        // GDA:     Gyroscope new data available. Default value: 0
+        //          0: no set of data available at gyroscope output
+        //          1: a new set of data is available at gyroscope sensor output
+        // XLDA:    Accelerometer new data available. Default value: 0
+        //          0: no set of data available at accelerometer output
+        //          1: a new set of data is available at accelerometer output
+        /*
+        if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_STATUS_REG, 1, &status, "Failed to read LSM6DS33 status"))
+            return false;
+        if ((status & 0x8) == 0)
+        {
+            std::cout << "STATUS ERROR -> RETURN" << std::endl;
+            return false;
+        }
+        */
 
-    /*
-    std::cout << "Gyro Data: "
-    << "  X " << static_cast<int16_t>(imuData[0] | imuData[1] << 8) * m_imuScale 
-    << "; Y " << static_cast<int16_t>(imuData[2] | imuData[3] << 8) * m_imuScale
-    << "; Z " << static_cast<int16_t>(imuData[4] | imuData[5] << 8) * m_imuScale << std::endl;
-    */
+      // bulk read: gyro and accel data
+        m_imuData.timestamp = RTMath::currentUSecsSinceEpoch();
+        if (!m_settings->HALRead(m_gyroAccelSlaveAddr, LSM6DS33_OUTX_L_G, 12, imuData, "Failed to read LSM6DS33 data"))
+            return false;
 
-    /*
-    std::cout << "Accel Data: "
-    << "  X " << static_cast<int16_t>(imuData[6] | imuData[7] << 8) 
-    << "; Y " << static_cast<int16_t>(imuData[8] | imuData[9] << 8)
-    << "; Z " << static_cast<int16_t>(imuData[10] | imuData[11] << 8) << std::endl;
-    */
+        /*
+        std::cout << "Gyro Data: "
+        << "  X " << static_cast<int16_t>(imuData[0] | imuData[1] << 8) * m_imuScale
+        << "; Y " << static_cast<int16_t>(imuData[2] | imuData[3] << 8) * m_imuScale
+        << "; Z " << static_cast<int16_t>(imuData[4] | imuData[5] << 8) * m_imuScale << std::endl;
+        */
 
-    if (!m_settings->HALRead(m_compassSlaveAddr, 0x80 | LIS3MDL_OUT_X_L, 6, compassData, "Failed to read LIS3MDL compass data"))
-        return false;
- 
-    /* 
-    std::cout << "Compass Data: "
-    << "  X " << static_cast<int16_t>(compassData[0] | compassData[1] << 8) 
-    << "; Y " << static_cast<int16_t>(compassData[2] | compassData[3] << 8)
-    << "; Z " << static_cast<int16_t>(compassData[4] | compassData[5] << 8) << std::endl;
-    */
-#endif
+        /*
+        std::cout << "Accel Data: "
+        << "  X " << static_cast<int16_t>(imuData[6] | imuData[7] << 8)
+        << "; Y " << static_cast<int16_t>(imuData[8] | imuData[9] << 8)
+        << "; Z " << static_cast<int16_t>(imuData[10] | imuData[11] << 8) << std::endl;
+        */
 
-    RTMath::convertToVector(imuData, m_imuData.gyro, m_gyroScale, false);
-    RTMath::convertToVector(imuData + 6, m_imuData.accel, m_accelScale, false);
-    RTMath::convertToVector(compassData, m_imuData.compass, m_compassScale, false);
+        if (!m_settings->HALRead(m_compassSlaveAddr, 0x80 | LIS3MDL_OUT_X_L, 6, compassData, "Failed to read LIS3MDL compass data"))
+            return false;
 
-    //  now do standard processing
-    handleGyroBias();
-    calibrateAverageCompass();
-    calibrateAccel();
+        /*
+        std::cout << "Compass Data: "
+        << "  X " << static_cast<int16_t>(compassData[0] | compassData[1] << 8)
+        << "; Y " << static_cast<int16_t>(compassData[2] | compassData[3] << 8)
+        << "; Z " << static_cast<int16_t>(compassData[4] | compassData[5] << 8) << std::endl;
+        */
+        RTMath::convertToVector(imuData, m_imuData.gyro, m_gyroScale, false);
+        RTMath::convertToVector(imuData + 6, m_imuData.accel, m_accelScale, false);
+        RTMath::convertToVector(compassData, m_imuData.compass, m_compassScale, false);
+        //  now do standard processing
+        handleGyroBias();
+        calibrateAverageCompass();
+        calibrateAccel();
 
-    //  now update the filter
-    updateFusion();
-
+        //  now update the filter
+        updateFusion();
+    }
     return true;
 }

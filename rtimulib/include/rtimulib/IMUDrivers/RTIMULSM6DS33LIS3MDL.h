@@ -29,28 +29,6 @@
 
 //  Define this symbol to use cache mode
 
-//#define LSM6DS33LIS3MDL_CACHE_MODE   // not reliable at the moment
-
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-
-//  Cache defs
-
-#define LSM6DS33LIS3MDL_FIFO_CHUNK_SIZE    6                       // 6 bytes of gyro data
-#define LSM6DS33LIS3MDL_FIFO_THRESH        16                      // threshold point in fifo
-#define LSM6DS33LIS3MDL_CACHE_BLOCK_COUNT  16                      // number of cache blocks
-
-typedef struct
-{
-    unsigned char data[LSM6DS33LIS3MDL_FIFO_THRESH * LSM6DS33LIS3MDL_FIFO_CHUNK_SIZE];
-    int count;                                              // number of chunks in the cache block
-    int index;                                              // current index into the cache
-    unsigned char accel[6];                                 // the raw accel readings for the block
-    unsigned char compass[6];                               // the raw compass readings for the block
-
-} LSM6DS33LIS3MDL_CACHE_BLOCK;
-
-#endif
-
 class RTIMULSM6DS33LIS3MDL : public RTIMU
 {
 public:
@@ -61,10 +39,14 @@ public:
     virtual int IMUType() { return RTIMU_TYPE_LSM6DS33LIS3MDL; }
     virtual bool IMUInit();
     virtual int IMUGetPollInterval();
+    virtual ssize_t read_fifo_status();
+    bool read_fifo(unsigned int chunks);
+    bool convert_chunk(unsigned int chunk);
     virtual bool IMURead();
 
 private:
     bool setGyroSampleRate();
+    bool setFIFO();
     bool setGyro();
     bool setAccel();
     bool setCompass();
@@ -76,15 +58,31 @@ private:
     RTFLOAT m_accelScale;
     RTFLOAT m_compassScale;
 
-#ifdef LSM6DS33LIS3MDL_CACHE_MODE
-    bool m_firstTime;                                       // if first sample
+    unsigned char data[8192] = {0};
+    unsigned int bytes_readed = 0;
 
-    LSM6DS33LIS3MDL_CACHE_BLOCK m_cache[LSM6DS33LIS3MDL_CACHE_BLOCK_COUNT]; // the cache itself
-    int m_cacheIn;                                          // the in index
-    int m_cacheOut;                                         // the out index
-    int m_cacheCount;                                       // number of used cache blocks
+    const unsigned char chunk_size = 12;
+    const unsigned char samples_in_chunk = 6;
 
-#endif
+    unsigned int total_droped_chunks = 0;
+    unsigned int total_droped_samples = 0;
+    unsigned int total_droped_bytes = 0;
+
+    unsigned int first_valid_chunk_addr = 0;
+
+    unsigned int n_samples = 0;
+    unsigned int n_chunks = 0;
+    unsigned int n_bytes = 0;
+
+    unsigned int total_blocks_readed = 2;
+    unsigned int total_chunks_readed = 10;
+    unsigned int samples_to_read_next_round = 0;
+
+    bool fifo_full    = false;
+    bool fifo_overrun = false;
+    bool fifo_empty   = false;
+    unsigned int fifo_pattern = 0;
+
 };
 
 #endif // _RTIMULSM6DS33LIS3MDL_H

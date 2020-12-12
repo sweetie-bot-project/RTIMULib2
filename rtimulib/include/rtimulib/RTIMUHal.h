@@ -90,7 +90,7 @@ public:
 
     bool HALOpen();
     void HALClose();
-    bool HALRead(unsigned char slaveAddr, unsigned char regAddr, unsigned char length,
+    bool HALRead(unsigned char slaveAddr, unsigned char regAddr, unsigned int length,
                  unsigned char *data, const char *errorMsg);    // normal read with register select
     bool HALRead(unsigned char slaveAddr, unsigned char length,
                  unsigned char *data, const char *errorMsg);    // read without register select
